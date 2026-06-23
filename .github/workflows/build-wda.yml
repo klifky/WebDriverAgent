@@ -1,4 +1,4 @@
-name: Build WDA IPA
+name: Build WDA
 on: workflow_dispatch
 
 jobs:
@@ -6,15 +6,26 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build WDA
+
+      - run: mkdir -p Resources/WebDriverAgent.bundle
+
+      - name: Build
         run: |
           xcodebuild build-for-testing \
             -project WebDriverAgent.xcodeproj \
             -scheme WebDriverAgentRunner \
             -destination generic/platform=iOS \
-            -derivedDataPath DerivedData \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath build
+
+      - name: Package IPA
+        run: |
+          APP_PATH=$(find build/Build/Products -name "*.app" | head -1)
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r WebDriverAgent.ipa Payload/
+
       - uses: actions/upload-artifact@v4
         with:
-          name: WDA
-          path: DerivedData/
+          name: WebDriverAgent
+          path: WebDriverAgent.ipa
